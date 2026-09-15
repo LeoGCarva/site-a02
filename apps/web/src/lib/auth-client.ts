@@ -1,7 +1,5 @@
 import { createAuthClient } from "better-auth/react";
 
-import { ENV as env } from "../env";
-
 function getServerUrl(url: string) {
   const processEnv = (
     globalThis as {
@@ -38,5 +36,7 @@ function getServerUrl(url: string) {
 export const authClient = createAuthClient({
   // better-auth derives its route-matching base from this URL's path, so the
   // public auth path must equal the server-side mount (/api/auth everywhere)
-  baseURL: new URL("/api/auth", getServerUrl(env.NEXT_PUBLIC_SERVER_URL)).toString(),
+  // process.env (not varlock's ENV) because this module is shared by server and
+  // client components, and varlock only inlines ENV.* into "use client" files in dev
+  baseURL: new URL("/api/auth", getServerUrl(process.env.NEXT_PUBLIC_SERVER_URL!)).toString(),
 });

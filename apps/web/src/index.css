@@ -1,1 +1,33 @@
 @import "@site-a02/ui/globals.css";
+
+/* Landing page (sheet-music editorial). Font variables come from next/font in
+   src/components/landing/fonts.ts and are set on the landing page wrapper. */
+@theme inline {
+  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  --font-landing: var(--font-instrument-sans), "Segoe UI", system-ui, sans-serif;
+  --font-music: var(--font-noto-music), "Segoe UI Symbol", serif;
+}
+
+@theme {
+  --color-paper: #f5f0e6;
+  --color-paper-deep: #ece3d2;
+  --color-paper-card: #fbf8f2;
+  --color-paper-shadow: #e4d9c5;
+  --color-ink: #1d1a16;
+  --color-ink-soft: #5b544a;
+  --color-vermilion: #b8321f;
+  --color-vermilion-light: #f07a5f;
+
+  --animate-note-in: note-in 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+
+  @keyframes note-in {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}

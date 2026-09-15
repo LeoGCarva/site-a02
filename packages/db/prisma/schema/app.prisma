@@ -1,0 +1,154 @@
+// =============================================================
+// App de estudo de baixo com repetição espaçada
+// (generator/datasource ficam em schema.prisma; auth em auth.prisma)
+// =============================================================
+
+// -------------------------------------------------------------
+// CURRÍCULO — a árvore de habilidades
+// -------------------------------------------------------------
+
+model Skill {
+  id          String  @id @default(cuid())
+  slug        String  @unique // "escala-maior", "intervalos-terca"
+  title       String
+  description String?
+  tier        Int     // agrupamento visual (fase 1, 2, 3...)
+  position    Int     // ordem dentro do tier
+  isPublished Boolean @default(false)
+
+  exercises Exercise[]
+  progress  SkillProgress[]
+
+  // auto-relação M:N via tabela explícita
+  prerequisites SkillPrerequisite[] @relation("Dependent")
+  unlocks       SkillPrerequisite[] @relation("Required")
+
+  @@index([tier, position])
+}
+
+// Tabela de junção explícita (em vez de implícita) para permitir
+// acrescentar campos depois — ex.: "requisito forte" vs "sugerido".
+model SkillPrerequisite {
+  dependentId String
+  requiredId  String
+
+  dependent Skill @relation("Dependent", fields: [dependentId], references: [id], onDelete: Cascade)
+  required  Skill @relation("Required", fields: [requiredId], references: [id], onDelete: Cascade)
+
+  @@id([dependentId, requiredId])
+  @@index([requiredId])
+}
+
+// -------------------------------------------------------------
+// EXERCÍCIOS
+// -------------------------------------------------------------
+
+enum ExerciseKind {
+  FIND_NOTE       // "toque um Fá na 3ª corda" -> clique no braço
+  NAME_POSITION   // mostra uma posição -> nomeie a nota
+  INTERVAL_EAR    // toca duas notas -> identifique o intervalo   (fase 2)
+  SCALE_DEGREE    // "qual o 5º grau de Ré maior?"
+  PATTERN_PLAY    // sequência de posições em ordem
+}
+
+model Exercise {
+  id         String       @id @default(cuid())
+  skillId    String
+  skill      Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  kind       ExerciseKind
+  difficulty Int          @default(1) // 1-5, usado p/ ordenar a introdução
+
+  // Conteúdo polimórfico. O formato de cada um depende do `kind`,
+  // e é validado por um schema Zod no backend antes de gravar.
+  // Ex. FIND_NOTE:
+  //   prompt: { "note": "F", "string": 3 }
+  //   answer: { "positions": [{ "string": 3, "fret": 3 }] }
+  prompt Json
+  answer Json
+
+  // Chave determinística do conteúdo — evita duplicar exercícios
+  // quando você roda o gerador de seed de novo.
+  contentHash String @unique
+
+  attempts     Attempt[]
+  reviewStates ReviewState[]
+
+  @@index([skillId, difficulty])
+}
+
+// -------------------------------------------------------------
+// PROGRESSO E AGENDAMENTO
+// -------------------------------------------------------------
+
+// Log append-only. Nunca sofre UPDATE — é a fonte da verdade
+// e permite reprocessar o SRS inteiro se você trocar de algoritmo.
+model Attempt {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  exercise    Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  sessionId   String?
+  session     PracticeSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  isCorrect   Boolean
+  grade       Int      // 0-5, entrada do SM-2 (derivado de acerto + tempo)
+  responseMs  Int
+  givenAnswer Json     // o que o usuário respondeu, p/ análise de erros
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, exerciseId])
+}
+
+// Estado mutável do SRS: uma linha por (usuário, exercício).
+// É esta tabela que a query "o que revisar agora" consulta.
+model ReviewState {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId String
+  exercise   Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  easeFactor   Float    @default(2.5) // SM-2
+  intervalDays Int      @default(0)
+  repetitions  Int      @default(0)
+  lapses       Int      @default(0)
+  dueAt        DateTime
+  lastGrade    Int?
+  lastSeenAt   DateTime?
+
+  @@unique([userId, exerciseId])
+  @@index([userId, dueAt]) // <- índice que sustenta a query principal
+}
+
+model SkillProgress {
+  id      String @id @default(cuid())
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillId String
+  skill   Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  unlockedAt  DateTime?
+  completedAt DateTime?
+  mastery     Float     @default(0) // 0-1, média móvel dos acertos
+
+  @@unique([userId, skillId])
+  @@index([userId, unlockedAt])
+}
+
+// Agrupa tentativas numa "sessão de prática" — serve para o
+// resumo de fim de sessão e para calcular streak por dia.
+model PracticeSession {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  correctCount Int      @default(0)
+  totalCount   Int      @default(0)
+
+  attempts Attempt[]
+
+  @@index([userId, startedAt])
+}

@@ -9,6 +9,17 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
+  // ---- campos e relações do app ----
+  tuning           String            @default("E,A,D,G") // cordas da mais grave p/ a mais aguda
+  fretCount        Int               @default(20)
+  dailyGoal        Int               @default(20) // exercícios/dia
+  timezone         String            @default("UTC") // necessário p/ calcular streak
+
+  attempts         Attempt[]
+  reviewStates     ReviewState[]
+  skillProgress    SkillProgress[]
+  practiceSessions PracticeSession[]
+
   @@unique([email])
   @@map("user")
 }
