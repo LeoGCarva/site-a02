@@ -1,111 +1,112 @@
-# site-a02
+# Theoryca
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Fastify, and more.
+An early-stage web app for learning music through short, game-like daily lessons. This repository is named `site-a02`; Theoryca is the product name used on the landing page.
 
-## Features
+## Project status
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Fastify** - Fast, low-overhead web framework
-- **Node.js** - Runtime environment
-- **Prisma** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **Turborepo** - Optimized monorepo build system
+Theoryca is in development. The lessons described on the landing page aren't built yet.
 
-## Getting Started
+**Working in the code today:**
 
-First, install the dependencies:
+- Landing page
+- Sign-up and sign-in with email and password
+- Protected dashboard page, which is still a placeholder
 
-```bash
-pnpm install
+**Modeled in the database, but not yet used by the app:**
+
+- A skill tree with prerequisites
+- Exercises, attempts, and practice sessions
+- Spaced-repetition review state and skill progress
+
+## Tech stack
+
+- **Web:** Next.js 16, React, Tailwind CSS, shadcn/ui
+- **API:** Fastify on Node.js
+- **Database:** PostgreSQL with Prisma
+- **Authentication:** Better Auth
+- **Environment variables:** Varlock
+- **Monorepo:** Turborepo and pnpm workspaces
+
+The project was scaffolded with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack).
+
+## Project structure
+
+```text
+apps/
+  web/        Next.js frontend
+  server/     Fastify API
+packages/
+  auth/       Better Auth configuration
+  config/     Shared TypeScript configuration
+  db/         Prisma schema and client
+  ui/         Shared shadcn/ui components and styles
 ```
 
-## Database Setup
+## Getting started
 
-Generate the Prisma client before development, typechecking, or building, including in CI and deployment builds. Run this again after changing the Prisma schema:
+You need Node.js, pnpm, and a PostgreSQL database.
+
+1. Install the dependencies:
+
+   ```bash
+   pnpm install
+   ```
+
+2. Create `apps/server/.env`:
+
+   ```bash
+   DATABASE_URL=postgresql://user:password@localhost:5432/theoryca
+   BETTER_AUTH_SECRET=replace-with-at-least-32-characters
+   BETTER_AUTH_URL=http://localhost:3000
+   CORS_ORIGIN=http://localhost:3001
+   ```
+
+3. Create `apps/web/.env`:
+
+   ```bash
+   NEXT_PUBLIC_SERVER_URL=http://localhost:3000
+   ```
+
+4. Generate the Prisma client and apply the schema:
+
+   ```bash
+   pnpm db:generate
+   pnpm db:push
+   ```
+
+5. Start the apps:
+
+   ```bash
+   pnpm dev
+   ```
+
+The web app runs at <http://localhost:3001> and the API at <http://localhost:3000>.
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `pnpm dev` | Start all apps in development mode |
+| `pnpm dev:web` | Start only the web app |
+| `pnpm dev:server` | Start only the API |
+| `pnpm build` | Build all apps |
+| `pnpm check-types` | Check types across the monorepo |
+| `pnpm db:generate` | Generate the Prisma client |
+| `pnpm db:push` | Push the schema to the database |
+| `pnpm db:migrate` | Run database migrations |
+| `pnpm db:studio` | Open the database UI |
+| `pnpm env:generate` | Regenerate typed environment files after changing an `.env.schema` |
+
+## Adding UI components
+
+To add shared components to `packages/ui`, run this from the repository root:
 
 ```bash
-pnpm run db:generate
+npx shadcn@latest add accordion dialog -c packages/ui
 ```
 
-This project uses PostgreSQL with Prisma.
-
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/server/.env` file with your PostgreSQL connection details.
-
-3. Apply the schema to your database:
-
-```bash
-pnpm run db:push
-```
-
-Then, run the development server:
-
-```bash
-pnpm run dev
-```
-
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
-
-## UI Customization
-
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
-
-Import shared components like this:
+Then import them like this:
 
 ```tsx
 import { Button } from "@site-a02/ui/components/button";
 ```
-
-### Add app-specific blocks
-
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Environment Configuration
-
-Each app owns its environment schema in `.env.schema`. Varlock generates `src/env.ts` during installation; run `pnpm run env:generate` after changing a schema. Commit schemas, and keep secrets in ignored env files or your deployment platform.
-
-Import the generated `ENV` accessor in application code. Shared database and auth packages receive configuration or initialized clients from the application. See [Varlock's monorepo guide](https://varlock.dev/guides/monorepos/).
-
-Bun's automatic env loading is disabled in `bunfig.toml`; the framework integration or server bootstrap loads Varlock. Node deployments must include Varlock and its dependencies alongside the app schema.
-
-## Project Structure
-
-```
-site-a02/
-├── apps/
-│   ├── web/         # Frontend application (Next.js)
-│   └── server/      # Backend API (Fastify)
-├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run dev:server`: Start only the server
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:push`: Push schema changes to database
-- `pnpm run db:generate`: Generate database client/types
-- `pnpm run db:migrate`: Run database migrations
-- `pnpm run db:studio`: Open database studio UI
